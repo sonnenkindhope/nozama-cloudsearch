@@ -4,6 +4,8 @@
 import os
 import logging
 import binascii
+import re
+import json
 from datetime import datetime
 
 import formencode
@@ -11,6 +13,7 @@ from formencode import validators
 
 from nozama.cloudsearch.data.db import db
 from nozama.cloudsearch.data.db import get_es
+import nozama.cloudsearch.data.query_parser as query_parser
 
 
 def get_log(e=None):
@@ -68,7 +71,6 @@ class DocSchema(formencode.Schema):
 
 DOC_SCHEMA = DocSchema()
 
-
 HEADERS = {"Content-Type": "application/json"}
 
 
@@ -120,23 +122,47 @@ def search(query={}):
     es = get_es()
 
     qstring = query.get('q', '')
-    log.debug("searching query '{0}'".format(query))
+    fq_string = query.get('fq', '')
+    facet_string = query.get('facet', '{}')
+    sort_string = query.get('sort', '')
+    qparser = query.get('q.parser', 'simple')
     formatType = query.get('format', '')
+    qsize = query.get('size', '10')
+    log.debug("searching query '{0}'".format(query))
 
     # try:
-    if qstring:
+    if qstring and qparser == "simple":
         query = {
             "query": {
                 "query_string": {
                     "query": u"{0}*".format(qstring)
                 }
-            }
+            },
+            "size": qsize
         }
-        results = es.conn.search(index=es.index, body=query)
+    elif qparser == "structured" and qstring == "matchall":
+        query_dict = query_parser.parse_query(fq_string)
 
+        if len(query_dict) < 1:
+            raise ValueError("cannot create query")
+
+        query = {"size": qsize, "query": {"bool": query_dict}}
     else:
-        query = {"query": {"match_all": {}}}
-        results = es.conn.search(index=es.index, body=query)
+        query = {"query": {"match_all": {}}, "size": qsize}
+
+    if len(sort_string) > 0:
+        items = sort_string.split()
+        if len(items) == 2:
+            query["sort"] = [{(items[0] if items[0] == '_score' else items[0] + '.keyword'): (
+                items[1] if items[1] in ['asc', 'desc'] else 'desc')}]
+
+    facet_dict = query_parser.parse_facets(facet_string)
+    if len(facet_dict) > 0:
+        query['aggs'] = facet_dict
+
+    log.debug("QUERY: ")
+    log.debug(query)
+    results = es.conn.search(index=es.index, body=query)
 
     # except ElasticHttpNotFoundError:
     #    # No documents present in store. Don't worry about it there's nothing
@@ -171,6 +197,12 @@ def search(query={}):
             "cpu-time-ms": 0
         }
     }
+
+    result_facets = query_parser.parse_aggregation(results)
+    # log.debug(results)
+
+    if len(result_facets) > 0:
+        rc['facets'] = result_facets
 
     log.debug("found '{0}'".format(rc))
 
