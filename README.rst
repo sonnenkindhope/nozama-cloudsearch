@@ -250,3 +250,9 @@ Contributed by hokuma(https://github.com/hokuma)
 This is a minor fix to the LICENSE file as spotted by Alex (https://github.com/ALyman).
 
  * https://github.com/oisinmulvihill/nozama-cloudsearch/issues/1
+
+Docker Build
+------------
+
+Added fixed version to requirements to allow building a functioning docker image.
+Versions extracted from last offical docker image.

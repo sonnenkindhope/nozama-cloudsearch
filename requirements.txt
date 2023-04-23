@@ -1,10 +1,10 @@
-pymongo
-elasticsearch
-decorator
-paste
-formencode
-pyramid
-pyramid_jinja2
-pyramid_beaker
-waitress
-requests
+pymongo == 3.12.0
+elasticsearch == 7.14.0
+decorator == 5.0.9
+paste == 3.5.0
+formencode == 2.0.0
+pyramid == 2.0
+pyramid_jinja2 == 2.8
+pyramid_beaker == 0.8
+waitress == 2.0.0
+requests == 2.26.0
