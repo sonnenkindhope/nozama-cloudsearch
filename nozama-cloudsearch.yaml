@@ -8,6 +8,7 @@ services:
     environment:
       - MONGO_HOST=mongo
       - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_VERSION_TYPE=external_gte
     depends_on:
       - mongo
       - elasticsearch

@@ -20,7 +20,7 @@ def get_log(e=None):
 
 
 def status_body(
-    status="ok", message="", error="", traceback="", to_json=False
+        status="ok", message="", error="", traceback="", to_json=False
 ):
     """Create a JSON response body we will use for error and other situations.
 
@@ -137,6 +137,7 @@ def xyz_handler(status):
 class HttpMethodOverrideMiddleware(object):
     '''WSGI middleware for overriding HTTP Request Method for RESTful support
     '''
+
     def __init__(self, application):
         self.application = application
 
@@ -180,6 +181,7 @@ class JSONErrorHandler(object):
         )
 
     """
+
     def __init__(self, application):
         self.app = application
         self.log = get_log("JSONErrorHandler")

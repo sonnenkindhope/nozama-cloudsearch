@@ -74,7 +74,7 @@ DOC_SCHEMA = DocSchema()
 HEADERS = {"Content-Type": "application/json"}
 
 
-def add_to_elasticsearch(doc):
+def add_to_elasticsearch(doc, version_type):
     """This indexes the fields and puts them into cloud search for later
     searching.
 
@@ -84,11 +84,20 @@ def add_to_elasticsearch(doc):
 
     log.debug("adding doc <{0}>".format(doc['id']))
 
-    result = es.conn.create(
-        index=es.index,
-        id=doc['_id'],
-        body=doc['fields'],
-    )
+    if version_type in ["external", "external_gte", "force"]:
+        doc['version_type'] = version_type
+        result = es.conn.index(
+            index=es.index,
+            id=doc['_id'],
+            body=doc['fields']
+        )
+    else:
+        result = es.conn.create(
+            index=es.index,
+            id=doc['_id'],
+            body=doc['fields']
+        )
+
     es.conn.indices.refresh(index=es.index)
 
     log.debug("doc <{0}> add result: {1}".format(doc['id'], result))
@@ -209,7 +218,7 @@ def search(query={}):
     return rc
 
 
-def load(docs_to_load):
+def load(docs_to_load, version_type):
     """Load documents in the Amazon SDF an add/remove from mongo accordingly.
 
     Each document will be validated against DocSchema.
@@ -260,7 +269,7 @@ def load(docs_to_load):
         log.debug("bulk loading: '{0}' document(s)".format(len(to_load)))
         for doc in to_load:
             conn.documents.update({'_id': doc['id']}, doc, True)
-            add_to_elasticsearch(doc)
+            add_to_elasticsearch(doc, version_type)
 
     if to_remove:
         # Recover the documents that have been removed in this upload and

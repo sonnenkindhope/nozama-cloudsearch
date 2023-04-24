@@ -11,6 +11,7 @@ from pyramid.view import view_config
 
 from nozama.cloudsearch.data import document
 from nozama.cloudsearch.service.restfulhelpers import status_body
+from nozama.cloudsearch.service import environ_settings
 
 
 def get_log(e=None):
@@ -82,8 +83,13 @@ def documents_batch(request):
 
     api_version = request.matchdict['api_version']
     log.debug("Received from client API Version <{0}>".format(api_version))
+    version_type = environ_settings.ELASTICSEARCH_VERSION_TYPE()
 
-    rc = document.load(request.json_body)
+    if version_type not in ["internal", "external", "external_gte", "force"]:
+        log.debug("versioning needs to be stated as elasticsearch version_type, assuming external versioning")
+        version_type = 'external_gte'
+
+    rc = document.load(request.json_body, version_type)
 
     log.debug("Document Batch response <{0}>".format(rc))
 
